@@ -305,6 +305,48 @@ extern "C" {
         unsigned char *j_ret,
         unsigned char *addr_ret
     );
+
+    ///hash a message to G2, result 96 bytes
+    bool librustzcash_msg_hash(
+        const unsigned char *msg,
+        uint32_t i,
+        unsigned char *result
+    );
+
+    ///Derive a public key from private key, sk 32 bytes, result 48 bytes
+    bool librustzcash_sk_to_pk(
+        const unsigned char *sk,
+        unsigned char *result
+    );
+
+    ///Sign a message hash with private key, msg_hash 96 bytes, sk 32 bytes, result 96 bytes
+    bool librustzcash_sign(
+        const unsigned char *msg_hash,
+        const unsigned char *sk,
+        unsigned char *result
+    );
+
+    ///verify a signature with public key, signature 96 bytes, msh_hash 96 bytes, pk 48 bytes
+    bool librustzcash_verify(
+        const unsigned char *signature,
+        const unsigned char *msg_hash,
+        const unsigned char *pk
+    );
+
+    ///Aggregate public keys into one, pks i*48 bytes, results 48 bytes
+    bool librustzcash_pk_aggregate(
+        const unsigned char *pks,
+        uint32_t i,
+        unsigned char *result
+    );
+
+    ///Aggregate signatures into one, sigs i*96 bytes, pks i*48 bytes, result
+    bool librustzcash_sig_aggregate(
+        const unsigned char *sigs,
+        const unsigned char *pks,
+        uint32_t i,
+        unsigned char *result
+    );
 }
 
 #endif // LIBRUSTZCASH_INCLUDE_H_
