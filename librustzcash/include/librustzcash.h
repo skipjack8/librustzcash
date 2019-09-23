@@ -309,7 +309,7 @@ extern "C" {
     ///hash a message to G2, result 96 bytes
     bool librustzcash_msg_hash(
         const unsigned char *msg,
-        uint32_t i,
+        size_t n,
         unsigned char *result
     );
 
@@ -333,18 +333,19 @@ extern "C" {
         const unsigned char *pk
     );
 
-    ///Aggregate public keys into one, pks i*48 bytes, results 48 bytes
+    ///Aggregate n public keys into one, pks n*48 bytes, results 48 bytes
     bool librustzcash_pk_aggregate(
         const unsigned char *pks,
-        uint32_t i,
+        uint32_t n,
         unsigned char *result
     );
 
-    ///Aggregate signatures into one, sigs i*96 bytes, pks i*48 bytes, result
+    ///Aggregate n signatures into one, msg_hash 96 buyes, sigs i*96 bytes, pks i*48 bytes, result
     bool librustzcash_sig_aggregate(
+        const unsigned char *msg_hash,
         const unsigned char *sigs,
         const unsigned char *pks,
-        uint32_t i,
+        uint32_t n,
         unsigned char *result
     );
 }
