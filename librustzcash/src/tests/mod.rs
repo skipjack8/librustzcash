@@ -6,6 +6,7 @@ mod key_agreement;
 mod key_components;
 mod notes;
 mod signatures;
+mod bls_test;
 
 #[test]
 fn sapling_generators() {
