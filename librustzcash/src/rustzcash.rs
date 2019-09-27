@@ -1887,22 +1887,26 @@ pub extern "system" fn librustzcash_sig_aggregate(
     result: *mut [c_uchar; 96],
 ) -> bool{
     let n = n as usize;
+    let msg_repr = read_G2(unsafe { &(&*msg_hash)[..] });
+    let msg_g2 = match msg_repr.into_affine_unchecked(){
+        Ok(p) => p,
+        Err(_) => return false,
+    };
     let sigs_input = unsafe { slice::from_raw_parts(sigs, n*96)};
     let mut sig = Vec::new();
     for i in 0..n {
         let sig_repr = read_G2(&(&*sigs_input)[96*i..96*(i+1)]);
-        let sig_g2 = match sig_repr.into_affine(){
+        let sig_g2 = match sig_repr.into_affine_unchecked(){
             Ok(p) => p,
             Err(_) => return false,
         };
         sig.push(sig_g2);
     }
-
     let pks_input = unsafe { slice::from_raw_parts(pks, n*48)};
     let mut pk = Vec::new();
     for i in 0..n {
         let pk_repr = read_G1(&(&*pks_input)[48*i..48*(i+1)]);
-        let pk_g1 = match pk_repr.into_affine(){
+        let pk_g1 = match pk_repr.into_affine_unchecked(){
             Ok(p) => p,
             Err(_) => return false,
         };
@@ -1940,13 +1944,39 @@ pub extern "system" fn librustzcash_sig_aggregate(
 
     let result = unsafe { &mut *result };
     result.copy_from_slice(&sig_sum_repr);
-
     //verify aggregated signature
-    let mut pk_sum = [0u8;48];
-    if !librustzcash_pk_aggregate(pks, n as u32, &mut pk_sum){
-        return false;
+    let mut pk_t = vec![G1::zero(); n];
+    let mut pk_sum = G1::zero();
+    crossbeam::scope(|scope| {
+        for ((tis, pkis),pki_tis) in t.chunks_mut(chunk_size)
+            .zip(pk.chunks_mut(chunk_size))
+            .zip(pk_t.chunks_mut(chunk_size))
+            {
+                scope.spawn(move || {
+                    for ((t_i, pk_i), pki_ti) in tis.iter()
+                        .zip(pkis.iter())
+                        .zip(pki_tis.iter_mut()){
+                        *pki_ti = pk_i.mul(*t_i);
+                    }
+                });
+            }
+    });
+    for i in 0..n {
+        pk_sum.add_assign(&pk_t[i]);
     }
-    if !librustzcash_verify(result, msg_hash, &pk_sum){
+    let pk_sum = pk_sum.into_affine();
+
+    let mut g1 = G1Affine::one();
+    g1.negate();
+    let b = match Bls12::final_exponentiation(
+        &Bls12::miller_loop([
+            (&g1.prepare(), &sig_sum.prepare()),
+            (&pk_sum.prepare(), &msg_g2.prepare())
+        ].iter())){
+        Some(b) => b,
+        None => return false,
+    };
+    if !Fq12::one().eq(&b) {
         return false;
     }
 

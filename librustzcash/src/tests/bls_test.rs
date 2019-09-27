@@ -191,3 +191,81 @@ fn test_librustzcash_sig_aggregate(){
     ];
     assert_eq!(&sig_sum[..], &sig_sum2[..])
 }
+
+#[test]
+fn bls_aggregate_signature_bench(){
+    use std::time::{Duration, Instant};
+    const N:usize = 27;
+    let mut msg = [0u8;32];
+    let mut msg_hash = [0u8;96];
+    let mut sk = [0u8;32];
+    let mut pk = [0u8;48];
+    let mut sig = [0u8;96];
+    let mut pks = [0u8;48*N];
+    let mut sigs = [0u8;96*N];
+
+    assert!(
+        librustzcash_msg_hash(&msg[0], 32, &mut msg_hash)
+    );
+    let mut time = Duration::new(0, 0);
+    for _ in 0..1000{
+        for i in 0..N{
+            sk[0] = (i+1) as u8;
+            assert!(librustzcash_sk_to_pk(&sk, &mut pk));
+            &pks[48*i..48*(i+1)].copy_from_slice(&pk);
+            assert!(librustzcash_sign(&msg_hash, &sk, &mut sig));
+            &sigs[96*i..96*(i+1)].copy_from_slice(&sig);
+        }
+
+        let start = Instant::now();
+        assert!(librustzcash_verify(&sig, &msg_hash, &pk));
+        assert!(librustzcash_sig_aggregate(&msg_hash, &sigs[0], &pks[0], N as u32, &mut sig));
+        time += start.elapsed();
+    }
+
+    let total_time = time.subsec_nanos() as f64 / 1000_000f64
+        + (time.as_secs() as f64) * 1000f64;
+
+    println!("time is {:?} ms", total_time/1000f64);
+}
+
+#[test]
+fn bls_verify_aggregated_signature_bench(){
+    use std::time::{Duration, Instant};
+
+    let mut msg = [0u8;32];
+    let mut msg_hash = [0u8;96];
+    let mut sk = [0u8;32];
+    let mut pk = [0u8;48];
+    let mut sig = [0u8;96];
+    let mut pks = [0u8;48*23];
+    let mut sigs = [0u8;96*23];
+
+    assert!(
+        librustzcash_msg_hash(&msg[0], 32, &mut msg_hash)
+    );
+    let mut time = Duration::new(0, 0);
+    for _ in 0..1000{
+        for i in 0..23{
+            sk[0] = (i+1) as u8;
+            assert!(librustzcash_sk_to_pk(&sk, &mut pk));
+            &pks[48*i..48*(i+1)].copy_from_slice(&pk);
+            assert!(librustzcash_sign(&msg_hash, &sk, &mut sig));
+            &sigs[96*i..96*(i+1)].copy_from_slice(&sig);
+        }
+
+        assert!(librustzcash_sig_aggregate(&msg_hash, &sigs[0], &pks[0], 23, &mut sig));
+
+        //start
+        let start = Instant::now();
+        assert!(librustzcash_msg_hash(&msg[0], 32, &mut msg_hash));
+        assert!(librustzcash_pk_aggregate(&pks[0], 23, &mut pk));
+        assert!(librustzcash_verify(&sig, &msg_hash, &pk));
+        time += start.elapsed();
+    }
+
+    let total_time = time.subsec_nanos() as f64 / 1000_000f64
+        + (time.as_secs() as f64) * 1000f64;
+
+    println!("time is {:?} ms", total_time/1000f64);
+}
