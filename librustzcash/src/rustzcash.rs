@@ -1701,13 +1701,13 @@ fn read_G2(from: &[u8]) -> G2Compressed {
 #[no_mangle]
 pub extern "system" fn librustzcash_msg_hash(
     msg: *const c_uchar,
-    n: size_t,
+    n: int64_t,
     result: *mut [c_uchar; 96],
 ) -> bool {
-    if n <= 0{
+    if n <= 0 {
         return false;
     }
-    let msg_input = unsafe { slice::from_raw_parts(msg, n) };
+    let msg_input = unsafe { slice::from_raw_parts(msg, n as usize) };
     let mut h = Blake2b::new(64);
     h.update(msg_input);
     let mut h = h.finalize_inplace();
@@ -1734,6 +1734,7 @@ pub extern "system" fn librustzcash_sk_to_pk(
     let sk_repr = read_le(unsafe { &(&*sk)[..] });
     let pk_g1 = G1Affine::one().mul(sk_repr).into_affine();
     let pk_repr = pk_g1.into_compressed().as_ref().to_vec();
+
     let result = unsafe { &mut *result };
     result.copy_from_slice(&pk_repr);
 
@@ -1755,6 +1756,7 @@ pub extern "system" fn librustzcash_sign(
     let sk_repr = read_le(unsafe { &(&*sk)[..] });
     let sig = msg_g2.mul(sk_repr).into_affine();
     let sig_repr = sig.into_compressed().as_ref().to_vec();
+
     let result = unsafe { &mut *result };
     result.copy_from_slice(&sig_repr);
 
@@ -1803,7 +1805,7 @@ pub extern "system" fn librustzcash_verify(
 }
 
 ///Derive n random numbers from n PKs
-pub fn hash_pks(pks:&Vec<G1Affine>)-> Vec<FrRepr>{
+pub fn hash_pks(pks: &Vec<G1Affine>) -> Vec<FrRepr> {
     let n = pks.len();
     let mut t = Vec::new();
     let mut h = Blake2s::new(32);
@@ -1829,27 +1831,47 @@ pub fn hash_pks(pks:&Vec<G1Affine>)-> Vec<FrRepr>{
 #[no_mangle]
 pub extern "system" fn librustzcash_pk_aggregate(
     pks: *const c_uchar,
-    n: uint32_t,
+    n: int64_t,
     result: *mut [c_uchar; 48],
 ) -> bool {
+    if n <= 0 {
+        return false;
+    }
     let n = n as usize;
     let pks_input = unsafe { slice::from_raw_parts(pks, n*48)};
-    let mut pk = Vec::new();
+    let mut pk = vec![G1Affine::zero();n];
+    let mut pk_repr = vec![G1Compressed::empty();n];
+
     for i in 0..n {
-        let pk_repr = read_G1(&(&*pks_input)[48*i..48*(i+1)]);
-        let pk_g1 = match pk_repr.into_affine(){
-            Ok(p) => p,
-            Err(_) => return false,
-        };
-        pk.push(pk_g1);
+        pk_repr[i] = read_G1(&(&*pks_input)[48*i..48*(i+1)]);
+    }
+    let mut chunk_size= n / num_cpus::get();
+    if chunk_size == 0 {
+        chunk_size = 1;
+    }
+    crossbeam::scope(|scope| {
+        for (pk_repr_is, pk_is) in pk_repr.chunks_mut(chunk_size)
+            .zip(pk.chunks_mut(chunk_size))
+            {
+                scope.spawn(move || {
+                    for (pk_repr_i, pk_i) in pk_repr_is.iter()
+                        .zip(pk_is.iter_mut()) {
+                        *pk_i = match (*pk_repr_i).into_affine(){
+                            Ok(p) => p,
+                            Err(_) => return,
+                        };
+                    }
+                });
+            }
+    });
+    for pk_i in pk.iter() {
+        if pk_i.is_zero(){
+            return false;
+        }
     }
     let mut t = hash_pks(&pk);
     let mut pk_t = vec![G1::zero(); n];
     let mut pk_sum = G1::zero();
-    let mut chunk_size= t.len() / num_cpus::get();
-    if chunk_size == 0 {
-        chunk_size = 1;
-    }
 
     crossbeam::scope(|scope| {
         for ((tis, pkis),pki_tis) in t.chunks_mut(chunk_size)
@@ -1883,9 +1905,12 @@ pub extern "system" fn librustzcash_sig_aggregate(
     msg_hash: *const [c_uchar; 96],
     sigs: *const c_uchar,
     pks: *const c_uchar,
-    n: uint32_t,
+    n: int64_t,
     result: *mut [c_uchar; 96],
 ) -> bool{
+    if n <= 0 {
+        return  false;
+    }
     let n = n as usize;
     let msg_repr = read_G2(unsafe { &(&*msg_hash)[..] });
     let msg_g2 = match msg_repr.into_affine_unchecked(){

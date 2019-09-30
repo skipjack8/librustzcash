@@ -9,6 +9,8 @@ use {
     librustzcash_verify, librustzcash_pk_aggregate, librustzcash_sig_aggregate,
 };
 
+//fn random_byte(array: &mut [u8;])
+
 #[test]
 fn test_librustzcash_msg_hash() {
     let mut r1 =  [0u8; 32];
@@ -84,7 +86,6 @@ fn test_librustzcash_verify(){
 
 #[test]
 fn test_librustzcash_pk_aggregate(){
-    let n: u32 = 5;
     let pks:[u8;240] = [
         0x97, 0xf1, 0xd3, 0xa7, 0x31, 0x97, 0xd7, 0x94, 0x26, 0x95, 0x63, 0x8c, 0x4f, 0xa9, 0xac, 0x0f,
         0xc3, 0x68, 0x8c, 0x4f, 0x97, 0x74, 0xb9, 0x05, 0xa1, 0x4e, 0x3a, 0x3f, 0x17, 0x1b, 0xac, 0x58,
@@ -219,7 +220,7 @@ fn bls_aggregate_signature_bench(){
 
         let start = Instant::now();
         assert!(librustzcash_verify(&sig, &msg_hash, &pk));
-        assert!(librustzcash_sig_aggregate(&msg_hash, &sigs[0], &pks[0], N as u32, &mut sig));
+        assert!(librustzcash_sig_aggregate(&msg_hash, &sigs[0], &pks[0], N as i64, &mut sig));
         time += start.elapsed();
     }
 
@@ -232,21 +233,21 @@ fn bls_aggregate_signature_bench(){
 #[test]
 fn bls_verify_aggregated_signature_bench(){
     use std::time::{Duration, Instant};
-
+    const N: usize = 27;
     let mut msg = [0u8;32];
     let mut msg_hash = [0u8;96];
     let mut sk = [0u8;32];
     let mut pk = [0u8;48];
     let mut sig = [0u8;96];
-    let mut pks = [0u8;48*23];
-    let mut sigs = [0u8;96*23];
+    let mut pks = [0u8;48*N];
+    let mut sigs = [0u8;96*N];
 
     assert!(
         librustzcash_msg_hash(&msg[0], 32, &mut msg_hash)
     );
     let mut time = Duration::new(0, 0);
     for _ in 0..1000{
-        for i in 0..23{
+        for i in 0..N {
             sk[0] = (i+1) as u8;
             assert!(librustzcash_sk_to_pk(&sk, &mut pk));
             &pks[48*i..48*(i+1)].copy_from_slice(&pk);
@@ -254,12 +255,12 @@ fn bls_verify_aggregated_signature_bench(){
             &sigs[96*i..96*(i+1)].copy_from_slice(&sig);
         }
 
-        assert!(librustzcash_sig_aggregate(&msg_hash, &sigs[0], &pks[0], 23, &mut sig));
+        assert!(librustzcash_sig_aggregate(&msg_hash, &sigs[0], &pks[0], N as i64, &mut sig));
 
         //start
         let start = Instant::now();
         assert!(librustzcash_msg_hash(&msg[0], 32, &mut msg_hash));
-        assert!(librustzcash_pk_aggregate(&pks[0], 23, &mut pk));
+        assert!(librustzcash_pk_aggregate(&pks[0], N as i64, &mut pk));
         assert!(librustzcash_verify(&sig, &msg_hash, &pk));
         time += start.elapsed();
     }
