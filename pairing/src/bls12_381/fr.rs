@@ -306,9 +306,9 @@ impl PrimeField for Fr {
         MODULUS
     }
 
-    const NUM_BITS: u32 = MODULUS_BITS;
+    const NUM_BITS: u32 = MODULUS_BITS; //255
 
-    const CAPACITY: u32 = Self::NUM_BITS - 1;
+    const CAPACITY: u32 = Self::NUM_BITS - 1;//254
 
     fn multiplicative_generator() -> Self {
         Fr(GENERATOR)

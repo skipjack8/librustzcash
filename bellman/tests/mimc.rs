@@ -3,20 +3,23 @@ extern crate pairing;
 extern crate rand;
 
 // For randomness (during paramgen and proof generation)
-use rand::{thread_rng, Rng};
+//use rand::{thread_rng, Rng};
+use rand::thread_rng;
 
 // For benchmarking
-use std::time::{Duration, Instant};
+//use std::time::{Duration, Instant};
 
 // Bring in some tools for using pairing-friendly curves
 use pairing::{
     Engine,
-    Field
+    Field,
+    PrimeField
 };
 
 // We're going to use the BLS12-381 pairing-friendly elliptic curve.
 use pairing::bls12_381::{
-    Bls12
+    Bls12,
+    Fr
 };
 
 // We'll use these interfaces to construct our circuit.
@@ -27,6 +30,7 @@ use bellman::{
 };
 
 // We're going to use the Groth16 proving system.
+/*
 use bellman::groth16::{
     Proof,
     generate_random_parameters,
@@ -34,7 +38,14 @@ use bellman::groth16::{
     create_random_proof,
     verify_proof,
 };
-
+*/
+use bellman::groth16::{
+    generate_random_parameters,
+    prepare_verifying_key,
+    create_random_proof,
+    verify_proof,
+};
+/*
 const MIMC_ROUNDS: usize = 322;
 
 /// This is an implementation of MiMC, specifically a
@@ -50,6 +61,7 @@ const MIMC_ROUNDS: usize = 322;
 ///     return xL
 /// }
 /// ```
+
 fn mimc<E: Engine>(
     mut xl: E::Fr,
     mut xr: E::Fr,
@@ -248,4 +260,115 @@ fn test_mimc() {
 
     println!("Average proving time: {:?} seconds", proving_avg);
     println!("Average verifying time: {:?} seconds", verifying_avg);
+}
+*/
+
+//
+/*
+* a + b  = c
+*/
+struct addDemo<E: Engine> {
+    a: Option<E::Fr>,
+    b: Option<E::Fr>
+}
+
+impl<E: Engine> Circuit<E> for addDemo<E> {
+    fn synthesize<CS: ConstraintSystem<E>>(
+        self,
+        cs: &mut CS
+    ) -> Result<(), SynthesisError>
+    {
+        // Allocate the first component a.
+        let a_value = self.a;
+        let a = cs.alloc(|| "a value", || {
+            a_value.ok_or(SynthesisError::AssignmentMissing)
+        })?;
+
+        println!("Variable a: {:?}", a);
+
+        // Allocate the second component b.
+        let b_value = self.b;
+        let b = cs.alloc(|| "b value", || {
+            b_value.ok_or(SynthesisError::AssignmentMissing)
+        })?;
+
+        println!("Variable b: {:?}", b);
+
+        //Allocate the Primary input c.;
+        let c = cs.alloc_input(|| "c value", ||{
+            let mut tmp = a_value.unwrap();
+            tmp.add_assign(&b_value.unwrap());
+            Ok(tmp)
+
+        })?;
+
+        println!("Variable c: {:?}\n", c);
+
+        cs.enforce(
+            || "a + b = c",
+            |lc| lc + a + b,
+            |lc| lc + CS::one(),
+            |lc| lc + c
+        );
+
+        Ok(())
+    }
+}
+#[test]
+fn test_add() {
+    // This may not be cryptographically safe, use
+    // `OsRng` (for example) in production software.
+    let rng = &mut thread_rng();
+
+    println!("\nCreating parameters...");
+
+    // Create parameters for our circuit
+    let params = {
+        let circuit = addDemo::<Bls12> {
+            a: None,
+            b: None
+        };
+
+        generate_random_parameters(circuit, rng).unwrap()
+    };
+    //println!("params.vk.alpha_g1 {:?}\n", params.vk.alpha_g1);
+    //println!("params.vk.beta_g1 {:?}\n", params.vk.beta_g1);
+    //println!("params.vk.beta_g2 {:?}\n", params.vk.beta_g2);
+    //println!("params.vk.gamma_g2 {:?}\n", params.vk.gamma_g2);
+    //println!("params.vk.delta_g1 {:?}\n", params.vk.delta_g1);
+    //println!("params.vk.delta_g2 {:?}\n", params.vk.delta_g2);
+    //println!("params.vk.ic {:?}\n", params.vk.ic);
+
+
+    println!("\nCreating proofs...");
+
+    let a = Fr::from_str("3").unwrap();
+    let b = Fr::from_str("6").unwrap();
+    let c = Fr::from_str("9").unwrap();
+
+
+
+    // Create an instance of our circuit (with the
+    // witness)
+    let circuit = addDemo {
+        a: Some(a),
+        b: Some(b)
+    };
+
+    // Create a groth16 proof with our parameters.
+    let proof = create_random_proof(circuit, &params, rng).unwrap();
+    //println!("proof.a {:?}\n", &proof.a);
+    //println!("proof.b {:?}\n", &proof.b);
+    //println!("proof.c {:?}\n", &proof.c);
+
+
+    println!("Verifying proofs...");
+    // Prepare the verification key (for proof verification)
+    let pvk = prepare_verifying_key(&params.vk);
+    // Check the proof
+    assert!(verify_proof(
+        &pvk,
+        &proof,
+        &[c]
+    ).unwrap());
 }

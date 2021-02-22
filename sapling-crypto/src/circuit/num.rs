@@ -125,8 +125,8 @@ impl<E: Engine> AllocatedNum<E> {
         // We want to ensure that the bit representation of a is
         // less than or equal to r - 1.
         let mut a = self.value.map(|e| BitIterator::new(e.into_repr()));
-        let mut b = E::Fr::char();
-        b.sub_noborrow(&1.into());
+        let mut b = E::Fr::char();//modulus r
+        b.sub_noborrow(&1.into());//r - 1
 
         let mut result = vec![];
 

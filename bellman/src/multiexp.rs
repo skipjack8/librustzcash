@@ -121,12 +121,12 @@ impl DensityTracker {
         }
     }
 
-    pub fn add_element(&mut self) {
+    pub fn add_element(&mut self) {//push "false" into bv, but not change total_density
         self.bv.push(false);
     }
 
-    pub fn inc(&mut self, idx: usize) {
-        if !self.bv.get(idx).unwrap() {
+    pub fn inc(&mut self, idx: usize) {//如果第idx个元素为False，则改为True，且total_density 加1.
+        if !self.bv.get(idx).unwrap() {//且total_density统计的是bv里true的个数
             self.bv.set(idx, true);
             self.total_density += 1;
         }

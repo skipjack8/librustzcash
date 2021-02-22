@@ -50,18 +50,23 @@ impl<E: Engine, G: Group<E>> EvaluationDomain<E, G> {
         // Compute the size of our evaluation domain
         let mut m = 1;
         let mut exp = 0;
+        //m=2^exp,
         while m < coeffs.len() {
             m *= 2;
             exp += 1;
 
             // The pairing-friendly curve may not be able to support
             // large enough (radix2) evaluation domains.
+            //E::Fr::S=32, MODULUS=0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+            //r-1=2^S * oddnum
             if exp >= E::Fr::S {
                 return Err(SynthesisError::PolynomialDegreeTooLarge)
             }
         }
 
         // Compute omega, the 2^exp primitive root of unity
+        //root_of_unity = generator ^ oddnum, so root_of_unity ^ (2^S) = 1 mod r
+        //omega = root_of_unity ^ (2^(S-exp))
         let mut omega = E::Fr::root_of_unity();
         for _ in exp..E::Fr::S {
             omega.square();
@@ -72,7 +77,7 @@ impl<E: Engine, G: Group<E>> EvaluationDomain<E, G> {
 
         Ok(EvaluationDomain {
             coeffs: coeffs,
-            exp: exp,
+            exp: exp,//
             omega: omega,
             omegainv: omega.inverse().unwrap(),
             geninv: E::Fr::multiplicative_generator().inverse().unwrap(),

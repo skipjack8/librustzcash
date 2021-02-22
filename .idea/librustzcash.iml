@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="CPP_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/zcash_primitives/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/zcash_primitives/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/zcash_primitives/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/zcash_primitives/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/bellman/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/bellman/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/bellman/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/bellman/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/zip32/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/zip32/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/zip32/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/zip32/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/zcash_proofs/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/zcash_proofs/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/zcash_proofs/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/zcash_proofs/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/pairing/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/pairing/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/pairing/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/pairing/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/sapling-crypto/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sapling-crypto/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sapling-crypto/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/sapling-crypto/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/librustzcash/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/librustzcash/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/librustzcash/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/librustzcash/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/zcash_wallet/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/zcash_wallet/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/zcash_wallet/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/zcash_wallet/benches" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/bellman/target" />
+      <excludeFolder url="file://$MODULE_DIR$/librustzcash/target" />
+      <excludeFolder url="file://$MODULE_DIR$/pairing/target" />
+      <excludeFolder url="file://$MODULE_DIR$/sapling-crypto/target" />
+      <excludeFolder url="file://$MODULE_DIR$/target" />
+      <excludeFolder url="file://$MODULE_DIR$/zcash_primitives/target" />
+      <excludeFolder url="file://$MODULE_DIR$/zcash_proofs/target" />
+      <excludeFolder url="file://$MODULE_DIR$/zcash_wallet/target" />
+      <excludeFolder url="file://$MODULE_DIR$/zip32/target" />
+    </content>
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module-library">
+      <library name="Header Search Paths">
+        <CLASSES />
+        <SOURCES />
+      </library>
+    </orderEntry>
+  </component>
+</module>

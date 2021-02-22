@@ -370,8 +370,8 @@ fn random_transformation_tests<G: CurveProjective>() {
         }
         for _ in 0..5 {
             let s = between.ind_sample(&mut rng);
-            v[s] = v[s].into_affine().into_projective();
-        }
+        v[s] = v[s].into_affine().into_projective();
+    }
 
         let expected_v = v
             .iter()

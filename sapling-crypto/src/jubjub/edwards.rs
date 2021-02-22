@@ -324,7 +324,7 @@ impl<E: JubjubEngine, Subgroup> Point<E, Subgroup> {
         }
     }
 
-    pub fn zero() -> Self {
+    pub fn zero() -> Self {//(0,1,0,1)
         Point {
             x: E::Fr::zero(),
             y: E::Fr::one(),

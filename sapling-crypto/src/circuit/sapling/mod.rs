@@ -355,7 +355,7 @@ impl<'a, E: JubjubEngine> Circuit<E> for Spend<'a, E> {
             let cs = &mut cs.namespace(|| format!("merkle tree hash {}", i));
 
             // Determines if the current subtree is the "right" leaf at this
-            // depth of the tree.
+            // depth of the tree.<path_element,0>:right leaf ==> CM in left leaf
             let cur_is_right = boolean::Boolean::from(boolean::AllocatedBit::alloc(
                 cs.namespace(|| "position bit"),
                 e.map(|e| e.1)
@@ -365,7 +365,7 @@ impl<'a, E: JubjubEngine> Circuit<E> for Spend<'a, E> {
             position_bits.push(cur_is_right.clone());
 
             // Witness the authentication path element adjacent
-            // at this depth.
+            // at this depth. Hash
             let path_element = num::AllocatedNum::alloc(
                 cs.namespace(|| "path element"),
                 || {
@@ -810,6 +810,7 @@ fn test_output_circuit_with_bls12_381() {
             assert_eq!(cs.get_input(3, "epk/x/input variable"), expected_epk_xy.0);
             assert_eq!(cs.get_input(4, "epk/y/input variable"), expected_epk_xy.1);
             assert_eq!(cs.get_input(5, "commitment/input variable"), expected_cm);
+            println!("expectd cm should be {}",cs.get_input(5,"commitment/input variable"));
         }
     }
 }
