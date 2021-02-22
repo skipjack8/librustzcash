@@ -1667,8 +1667,8 @@ fn test_sapling_spend_proof(){
     let mut rk:[u8;32] = [0;32];
     let mut proof:[u8;192] = [0;192];
 
-    let spend_path = Path::new("/Users/tron/CLionProjects/librustzcash/sapling-spend.params");
-    let output_path = Path::new("/Users/tron/CLionProjects/librustzcash/sapling-output.params");
+    let spend_path = Path::new("../sapling-spend.params");
+    let output_path = Path::new("../sapling-output.params");
     init_params(spend_path, output_path);
 
     let mut ctx = librustzcash_sapling_proving_ctx_init();
