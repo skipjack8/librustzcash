@@ -489,7 +489,7 @@ fn test_g2_compressed_invalid_vectors() {
             if let Err(GroupDecodingError::UnexpectedInformation) = z.into_affine() {
                 // :)
             } else {
-                panic!("should have rejected the point because the parity bit should not be set if the point is at infinity");
+                panic!("should have rejected the point because the paparity bit should not be set if the point is at infinity");
             }
         }
 

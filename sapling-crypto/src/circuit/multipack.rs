@@ -57,6 +57,7 @@ pub fn compute_multipacking<E: Engine>(
 ) -> Vec<E::Fr>
 {
     let mut result = vec![];
+    assert_eq!(E::Fr::CAPACITY as usize , 254);
 
     for bits in bits.chunks(E::Fr::CAPACITY as usize)
     {
@@ -73,6 +74,7 @@ pub fn compute_multipacking<E: Engine>(
 
         result.push(cur);
     }
+    println!("{:?}", result);
 
     result
 }
@@ -87,7 +89,7 @@ fn test_multipacking() {
 
     let mut rng = XorShiftRng::from_seed([0x3dbe6259, 0x8d313d76, 0x3237db17, 0xe5bc0654]);
 
-    for num_bits in 0..1500 {
+    for num_bits in 32..34{
         let mut cs = TestConstraintSystem::<Bls12>::new();
 
         let bits: Vec<bool> = (0..num_bits).map(|_| rng.gen()).collect();

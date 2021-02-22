@@ -32,6 +32,8 @@ use pairing::bls12_381::{
     Bls12,
     Fr
 };
+use std::fmt::Pointer;
+use std::convert::TryInto;
 
 /// This is an implementation of the twisted Edwards Jubjub curve.
 pub mod edwards;
@@ -432,4 +434,15 @@ fn test_jubjub_bls12() {
     ).unwrap();
 
     assert!(p == q);
+    // print generators
+
+    println!("Generators: ");
+    // Check for duplicates, far worse than spec inconsistencies!
+    for (i, p) in params.fixed_base_generators.iter().enumerate() {
+        println!("the {:?} point: ", i);
+        let mut result: [u8; 32] = [0; 32];
+        p.write(&mut result[..]).expect("length is 32 bytes");
+        println!("{:?}", result);
+    }
+
 }

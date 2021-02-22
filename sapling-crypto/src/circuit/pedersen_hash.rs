@@ -38,9 +38,11 @@ pub fn pedersen_hash<E: JubjubEngine, CS>(
 
     let mut segment_i = 0;
     loop {
+
         let mut segment_result = None;
         let mut segment_windows = &segment_generators.next()
                                                      .expect("enough segments")[..];
+
 
         let mut window_i = 0;
         while let Some(a) = bits.next() {
@@ -71,6 +73,7 @@ pub fn pedersen_hash<E: JubjubEngine, CS>(
             segment_windows = &segment_windows[1..];
 
             if segment_windows.len() == 0 {
+
                 break;
             }
 
@@ -79,6 +82,7 @@ pub fn pedersen_hash<E: JubjubEngine, CS>(
 
         match segment_result {
             Some(segment_result) => {
+                println!("segment {:?}", segment_i);
                 // Convert this segment into twisted Edwards form.
                 let segment_result = segment_result.into_edwards(
                     cs.namespace(|| format!("conversion of segment {} into edwards", segment_i)),
@@ -149,7 +153,7 @@ mod test {
         let mut rng = XorShiftRng::from_seed([0x3dbe6259, 0x8d313d76, 0x3237db17, 0xe5bc0654]);
         let params = &JubjubBls12::new();
 
-        for length in 0..751 {
+        for length in 751..752 {
             for _ in 0..5 {
                 let mut input: Vec<bool> = (0..length).map(|_| rng.gen()).collect();
 

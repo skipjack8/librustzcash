@@ -76,7 +76,7 @@ fn eval<E: Engine>(
            acc.add_assign(&tmp);
         }
     }
-
+    println!("acc:{}",acc);
     acc
 }
 
@@ -107,8 +107,8 @@ impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
         where F: FnOnce() -> Result<E::Fr, SynthesisError>, A: FnOnce() -> AR, AR: Into<String>
     {
         self.aux_assignment.push(f()?);
-        self.a_aux_density.add_element();
-        self.b_aux_density.add_element();
+        self.a_aux_density.add_element();//元素个数与aux input个数相同
+        self.b_aux_density.add_element();//True对应着该Variable出现在b中
 
         Ok(Variable(Index::Aux(self.aux_assignment.len() - 1)))
     }
@@ -170,6 +170,18 @@ impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
             &self.input_assignment,
             &self.aux_assignment
         )));
+
+        /*
+        println!("a_aux_density:{:?}", &self.a_aux_density);
+        println!("b_input_density:{:?}", self.b_input_density);
+        println!("b_aux_density:{:?}", self.b_aux_density);
+        println!("a:{:?}", self.a);
+        println!("b:{:?}", self.b);
+        println!("c:{:?}", self.c);
+        println!("input_assignment:{:?}", self.input_assignment);
+        println!("aux_assignment:{:?}", self.aux_assignment);
+        */
+
     }
 
     fn push_namespace<NR, N>(&mut self, _: N)
@@ -213,9 +225,9 @@ pub fn create_proof<E, C, P: ParameterSource<E>>(
         a_aux_density: DensityTracker::new(),
         b_input_density: DensityTracker::new(),
         b_aux_density: DensityTracker::new(),
-        a: vec![],
-        b: vec![],
-        c: vec![],
+        a: vec![],//{s0*u0(X)+s1*u1(X)+..},X=w^0,w^1,w^2....
+        b: vec![],//{s0*v0(X)+s1*v1(X)+..},X=w^0,w^1,w^2....
+        c: vec![],//{s0*w0(X)+s1*w1(X)+..},X=w^0,w^1,w^2....
         input_assignment: vec![],
         aux_assignment: vec![]
     };
@@ -235,23 +247,25 @@ pub fn create_proof<E, C, P: ParameterSource<E>>(
     let worker = Worker::new();
 
     let vk = params.get_vk(prover.input_assignment.len())?;
-
+    //A(X)=[s0,s1...].[u0(X),u1(X)...]
+    //B(X)=[s0,s1...].[v0(X),v1(X)...]
+    //C(X)=[s0,s1...].[w0(X),w1(X)...]
     let h = {
         let mut a = EvaluationDomain::from_coeffs(prover.a)?;
         let mut b = EvaluationDomain::from_coeffs(prover.b)?;
         let mut c = EvaluationDomain::from_coeffs(prover.c)?;
-        a.ifft(&worker);
-        a.coset_fft(&worker);
-        b.ifft(&worker);
-        b.coset_fft(&worker);
-        c.ifft(&worker);
-        c.coset_fft(&worker);
+        a.ifft(&worker);//A(X)系数
+        a.coset_fft(&worker);//A(g*omega^i) g:generator
+        b.ifft(&worker);//B(X)系数
+        b.coset_fft(&worker);//B(g*omega^i)
+        c.ifft(&worker);//C(X)系数
+        c.coset_fft(&worker);//C(g*omega^i)
 
         a.mul_assign(&worker, &b);
         drop(b);
         a.sub_assign(&worker, &c);
         drop(c);
-        a.divide_by_z_on_coset(&worker);
+        a.divide_by_z_on_coset(&worker);//(A(g*omega^i)*B(g*omega^i)-C(g*omega^i))/(t(g*omega^i))
         a.icoset_fft(&worker);
         let mut a = a.into_coeffs();
         let a_len = a.len() - 1;
@@ -259,19 +273,19 @@ pub fn create_proof<E, C, P: ParameterSource<E>>(
         // TODO: parallelize if it's even helpful
         let a = Arc::new(a.into_iter().map(|s| s.0.into_repr()).collect::<Vec<_>>());
 
-        multiexp(&worker, params.get_h(a.len())?, FullDensity, a)
+        multiexp(&worker, params.get_h(a.len())?, FullDensity, a)//{hi*x^i*(x^m-1)/delta}
     };
 
     // TODO: parallelize if it's even helpful
     let input_assignment = Arc::new(prover.input_assignment.into_iter().map(|s| s.into_repr()).collect::<Vec<_>>());
     let aux_assignment = Arc::new(prover.aux_assignment.into_iter().map(|s| s.into_repr()).collect::<Vec<_>>());
-
+    //sum([a_i*(beta*u_i(x) + alpha*v_i(x)_w_i(x)) / delta]_1, i=l+1,..m)
     let l = multiexp(&worker, params.get_l(aux_assignment.len())?, FullDensity, aux_assignment.clone());
-
+    //R1CS a 中用到的aux input个数
     let a_aux_density_total = prover.a_aux_density.get_total_density();
-
+    //u_i{x}
     let (a_inputs_source, a_aux_source) = params.get_a(input_assignment.len(), a_aux_density_total)?;
-
+    //a_0*u_0(x) + a_1*u_1(x) + ...
     let a_inputs = multiexp(&worker, a_inputs_source, FullDensity, input_assignment.clone());
     let a_aux = multiexp(&worker, a_aux_source, Arc::new(prover.a_aux_density), aux_assignment.clone());
 
@@ -279,12 +293,12 @@ pub fn create_proof<E, C, P: ParameterSource<E>>(
     let b_input_density_total = b_input_density.get_total_density();
     let b_aux_density = Arc::new(prover.b_aux_density);
     let b_aux_density_total = b_aux_density.get_total_density();
-
+    //v_i(x) in G1
     let (b_g1_inputs_source, b_g1_aux_source) = params.get_b_g1(b_input_density_total, b_aux_density_total)?;
-
+    //a_0*v_0(x) + a_1*v_1(x) + ...
     let b_g1_inputs = multiexp(&worker, b_g1_inputs_source, b_input_density.clone(), input_assignment.clone());
     let b_g1_aux = multiexp(&worker, b_g1_aux_source, b_aux_density.clone(), aux_assignment.clone());
-
+    //v_i(x) in G2
     let (b_g2_inputs_source, b_g2_aux_source) = params.get_b_g2(b_input_density_total, b_aux_density_total)?;
     
     let b_g2_inputs = multiexp(&worker, b_g2_inputs_source, b_input_density, input_assignment);
@@ -297,9 +311,9 @@ pub fn create_proof<E, C, P: ParameterSource<E>>(
     }
 
     let mut g_a = vk.delta_g1.mul(r);
-    g_a.add_assign_mixed(&vk.alpha_g1);
+    g_a.add_assign_mixed(&vk.alpha_g1);//[alpha]_1 + r*[delta]_1
     let mut g_b = vk.delta_g2.mul(s);
-    g_b.add_assign_mixed(&vk.beta_g2);
+    g_b.add_assign_mixed(&vk.beta_g2); // [beta]_2 + s*[delta]_2
     let mut g_c;
     {
         let mut rs = r;
@@ -307,24 +321,24 @@ pub fn create_proof<E, C, P: ParameterSource<E>>(
 
         g_c = vk.delta_g1.mul(rs);
         g_c.add_assign(&vk.alpha_g1.mul(s));
-        g_c.add_assign(&vk.beta_g1.mul(r));
+        g_c.add_assign(&vk.beta_g1.mul(r)); // rs*[delta]_1 + s*[alpha]_1 + r*[beta]_1
     }
     let mut a_answer = a_inputs.wait()?;
-    a_answer.add_assign(&a_aux.wait()?);
-    g_a.add_assign(&a_answer);
-    a_answer.mul_assign(s);
-    g_c.add_assign(&a_answer);
+    a_answer.add_assign(&a_aux.wait()?);//a_0*u_0(x) + a_1*u_1(x) + ...
+    g_a.add_assign(&a_answer);//pai_A = [alpha]_1 + r*[delta]_1 + a_0*u_0(x) + a_1*u_1(x) + ...
+    a_answer.mul_assign(s);//s(a_0*u_0(x) + a_1*u_1(x) + ...)
+    g_c.add_assign(&a_answer);// rs*[delta]_1 + s*[alpha]_1 + r*[beta]_1 + s*(a_0*u_0(x) + a_1*u_1(x) + ...)
 
     let mut b1_answer = b_g1_inputs.wait()?;
-    b1_answer.add_assign(&b_g1_aux.wait()?);
+    b1_answer.add_assign(&b_g1_aux.wait()?);//a_0*v_0(x) + a_1*v_1(x) + ... in G1
     let mut b2_answer = b_g2_inputs.wait()?;
-    b2_answer.add_assign(&b_g2_aux.wait()?);
+    b2_answer.add_assign(&b_g2_aux.wait()?);//a_0*v_0(x) + a_1*v_1(x) + ... in G2
 
-    g_b.add_assign(&b2_answer);
-    b1_answer.mul_assign(r);
-    g_c.add_assign(&b1_answer);
-    g_c.add_assign(&h.wait()?);
-    g_c.add_assign(&l.wait()?);
+    g_b.add_assign(&b2_answer);//pai_B = [beta]_2 + s*[delta]_2 + a_0*v_0(x) + a_1*v_1(x) + ...
+    b1_answer.mul_assign(r);//r(a_0*v_0(x) + a_1*v_1(x) + ...)
+    g_c.add_assign(&b1_answer);//rs*[delta]_1 + s*[alpha]_1 + r*[beta]_1 + s*(a_0*u_0(x) + a_1*u_1(x) + ...)+ r(a_0*v_0(x) + a_1*v_1(x) + ...)
+    g_c.add_assign(&h.wait()?); // + [h(x)(t)/delta]_1
+    g_c.add_assign(&l.wait()?);// + sum(a_i*(beta*u_i(x) + alpha*v_i(x)_w_i(x)) / delta]_1)
 
     Ok(Proof {
         a: g_a.into_affine(),

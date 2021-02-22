@@ -1172,6 +1172,18 @@ impl SqrtField for Fq {
 
 #[test]
 fn test_b_coeff() {
+    let r = FqRepr([4,0,0,0,0,0]);
+    println!("r {:x?}", r);
+    let fq1 = Fq::from_repr(r).unwrap();
+    println!("Fq1 {:x?}", fq1);
+    let fq2 = Fq2 {
+        c0: fq1,
+        c1: fq1,
+    };
+    let a = fq1.to_owned();
+
+
+
     assert_eq!(Fq::from_repr(FqRepr::from(4)).unwrap(), B_COEFF);
 }
 

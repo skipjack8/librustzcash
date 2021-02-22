@@ -33,7 +33,7 @@ pub fn group_hash<E: JubjubEngine>(
 
     match edwards::Point::<E, _>::read(&h[..], params) {
         Ok(p) => {
-            let p = p.mul_by_cofactor(params);
+            let p = p.mul_by_cofactor(params);//[8]p
 
             if p != edwards::Point::zero() {
                 Some(p)

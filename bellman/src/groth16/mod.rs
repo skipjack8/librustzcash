@@ -56,8 +56,8 @@ impl<E: Engine> Proof<E> {
         mut reader: R
     ) -> io::Result<Self>
     {
-        let mut g1_repr = <E::G1Affine as CurveAffine>::Compressed::empty();
-        let mut g2_repr = <E::G2Affine as CurveAffine>::Compressed::empty();
+        let mut g1_repr = <E::G1Affine as CurveAffine>::Uncompressed::empty();
+        let mut g2_repr = <E::G2Affine as CurveAffine>::Uncompressed::empty();
 
         reader.read_exact(g1_repr.as_mut())?;
         let a = g1_repr
@@ -228,13 +228,13 @@ pub struct Parameters<E: Engine> {
     // QAP "A" polynomials evaluated at tau in the Lagrange basis. Never contains
     // points at infinity: polynomials that evaluate to zero are omitted from
     // the CRS and the prover can deterministically skip their evaluation.
-    pub a: Arc<Vec<E::G1Affine>>,
+    pub a: Arc<Vec<E::G1Affine>>,//{u_i(x)}
 
     // QAP "B" polynomials evaluated at tau in the Lagrange basis. Needed in
     // G1 and G2 for C/B queries, respectively. Never contains points at
     // infinity for the same reason as the "A" polynomials.
-    pub b_g1: Arc<Vec<E::G1Affine>>,
-    pub b_g2: Arc<Vec<E::G2Affine>>
+    pub b_g1: Arc<Vec<E::G1Affine>>,//v_i{x} in G1
+    pub b_g2: Arc<Vec<E::G2Affine>>// v_i{x} in G2
 }
 
 impl<E: Engine> PartialEq for Parameters<E> {

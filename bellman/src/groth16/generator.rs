@@ -138,18 +138,25 @@ impl<E: Engine> ConstraintSystem<E> for KeypairAssembly<E> {
             this_constraint: usize
         )
         {
+            println!("LinearCombination l:{:?}",  l.0);
             for (index, coeff) in l.0 {
                 match index {
                     Variable(Index::Input(id)) => inputs[id].push((coeff, this_constraint)),
                     Variable(Index::Aux(id)) => aux[id].push((coeff, this_constraint))
                 }
             }
+
         }
-
+        println!("\nConstraint:{:?}",  self.num_constraints);
         eval(a(LinearCombination::zero()), &mut self.at_inputs, &mut self.at_aux, self.num_constraints);
+        println!("at_inputs:{:?}",  self.at_inputs);
+        println!("at_aux:{:?}",  self.at_aux);
         eval(b(LinearCombination::zero()), &mut self.bt_inputs, &mut self.bt_aux, self.num_constraints);
+        println!("bt_inputs:{:?}",  self.bt_inputs);
+        println!("bt_aux:{:?}",  self.bt_aux);
         eval(c(LinearCombination::zero()), &mut self.ct_inputs, &mut self.ct_aux, self.num_constraints);
-
+        println!("ct_inputs:{:?}",  self.ct_inputs);
+        println!("ct_aux:{:?}",  self.ct_aux);
         self.num_constraints += 1;
     }
 
@@ -204,9 +211,9 @@ pub fn generate_parameters<E, C>(
     // x * 0 = 0
     for i in 0..assembly.num_inputs {
         assembly.enforce(|| "",
-            |lc| lc + Variable(Index::Input(i)),
-            |lc| lc,
-            |lc| lc,
+            |lc| lc + Variable(Index::Input(i)),//[<E::Fr(1), Variable(Index::Input(i))>]
+            |lc| lc,//[]
+            |lc| lc, // []
         );
     }
 

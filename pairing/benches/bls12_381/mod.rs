@@ -43,7 +43,7 @@ fn bench_pairing_g2_preparation(b: &mut ::test::Bencher) {
 
 #[bench]
 fn bench_pairing_miller_loop(b: &mut ::test::Bencher) {
-    const SAMPLES: usize = 1000;
+    const SAMPLES: usize = 100000;
 
     let mut rng = XorShiftRng::from_seed([0x5dbe6259, 0x8d313d76, 0x3237db17, 0xe5bc0654]);
 
@@ -66,7 +66,7 @@ fn bench_pairing_miller_loop(b: &mut ::test::Bencher) {
 
 #[bench]
 fn bench_pairing_final_exponentiation(b: &mut ::test::Bencher) {
-    const SAMPLES: usize = 1000;
+    const SAMPLES: usize = 10000;
 
     let mut rng = XorShiftRng::from_seed([0x5dbe6259, 0x8d313d76, 0x3237db17, 0xe5bc0654]);
 
@@ -90,7 +90,7 @@ fn bench_pairing_final_exponentiation(b: &mut ::test::Bencher) {
 
 #[bench]
 fn bench_pairing_full(b: &mut ::test::Bencher) {
-    const SAMPLES: usize = 1000;
+    const SAMPLES: usize = 10000;
 
     let mut rng = XorShiftRng::from_seed([0x5dbe6259, 0x8d313d76, 0x3237db17, 0xe5bc0654]);
 

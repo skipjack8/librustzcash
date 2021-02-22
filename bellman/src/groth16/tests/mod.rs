@@ -113,7 +113,7 @@ fn test_xordemo() {
         };
 
         generate_parameters(
-            c,
+                c,
             g1,
             g2,
             alpha,
